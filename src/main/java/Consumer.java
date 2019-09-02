@@ -25,7 +25,7 @@ public class Consumer {
         mTopic = topic;
     }
 
-    public static void main(String[] args) throws InterruptedException {
+    public static void main(String[] args) {
         String server = "127.0.0.1:9092";
         String groupId = "some_application";
         String topic = "user_registered";
@@ -45,7 +45,7 @@ public class Consumer {
         return properties;
     }
 
-    public void run() throws InterruptedException {
+    public void run() {
         mLogger.info("Creating consumer thread");
 
         CountDownLatch latch = new CountDownLatch(1);
@@ -57,16 +57,22 @@ public class Consumer {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             mLogger.info("Caught shutdown hook");
             consumerRunnable.shutDown();
-            try {
-                latch.await();
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
+            await(latch);
 
             mLogger.info("Application has exited");
         }));
 
-        latch.await();
+        await(latch);
+    }
+
+    void await(CountDownLatch latch) {
+        try {
+            latch.await();
+        } catch (InterruptedException e) {
+            mLogger.error("Application got interrupted", e);
+        } finally {
+            mLogger.info("Application is closing");
+        }
     }
 
     private class ConsumerRunnable implements Runnable {
